@@ -1,120 +1,115 @@
-# Vault — Week 1: Ledger Core
+# Koshio — Virtual Money Vault Engine
 
-A virtual money-vault backend: one real wallet balance, split into buckets
-(envelopes), with an atomic, concurrency-safe ledger underneath.
+A backend that lets you split one real account balance into purpose-based
+buckets (envelopes) — rent, savings, trip funds, money you're holding for a
+friend — instead of seeing one undifferentiated number. Every bucket has its
+own tracked balance, but they're all backed by a single atomic ledger, so the
+totals can never drift out of sync.
 
-## What's in this week's build
+## Why this exists
 
-- `schema.sql` — Postgres tables: `users`, `wallets`, `buckets`, `ledger_entries`
-- `src/services/walletService.js` — the actual engine: deposit/allocate,
-  spend, transfer, lock/unlock — all transactional with row-level locking
-- `src/routes/buckets.js` + `src/index.js` — Express API wrapping the engine
-- `scripts/testConcurrency.js` — proves two simultaneous spends can't overdraw
-  a bucket
+Most payment apps (Google Pay, PhonePe, etc.) only show you one balance.
+There's no way to mentally or functionally separate "rent money" from
+"spending money" from "money my friend asked me to hold" — you just have to
+remember. Koshio adds that separation as a real, enforced layer: locked
+buckets can't be spent from at checkout, custodial buckets track who the
+money belongs to and remind you when it's due back, and every transaction is
+recorded in an append-only ledger.
 
-## 1. Get a Postgres database (2 minutes, no local install needed)
+## Core features
 
-1. Go to https://supabase.com, create a free account and a new project
-2. Once it's ready: **Project Settings → Database → Connection string → URI**
-3. Copy that string — you'll paste it into `.env` in step 3 below
+- **Bucket-based allocation** — split any incoming deposit across buckets in
+  one atomic step; allocations must sum exactly to the deposit
+- **Concurrency-safe spending** — row-level locking (`SELECT ... FOR UPDATE`)
+  ensures two simultaneous spends on the same bucket can never both succeed
+  if only one can be covered by the balance
+- **Locked buckets** — a locked bucket is excluded from the spend flow
+  entirely; the only way to use that money is to explicitly transfer it out
+  first, a separate deliberate action
+- **Custodial buckets** — hold money on behalf of someone else, with a
+  due-date reminder job
+- **Transfers between buckets** — atomic, with consistent lock ordering to
+  avoid deadlocks
+- **Full transaction history** — every deposit, spend, and transfer writes
+  an immutable row to the ledger
 
-(You can use local Postgres instead if you already have it installed —
-just put your local connection string in `.env` and skip Supabase.)
+## Architecture
 
-## 2. Install dependencies
+- **Database:** PostgreSQL (hosted on Supabase) — chosen specifically for
+  real transactional guarantees and row-level locking
+- **Backend:** Node.js + Express
+- **Core invariant:** `wallet.total_balance` always equals the sum of every
+  bucket's balance under it; every operation updates both sides inside a
+  single database transaction
+
+## Setup
+
+### 1. Get a Postgres database
+
+Create a free project at https://supabase.com. Once it's ready, go to
+**Connect** (top of the dashboard) and copy the **Session pooler** connection
+string (the direct connection host often fails to resolve over IPv6 on some
+networks — the pooler avoids that).
+
+### 2. Install dependencies
 
 ```bash
-cd vault-project
 npm install
 ```
 
-## 3. Configure environment
+### 3. Configure environment
 
-```bash
-cp .env.example .env
-```
+Copy `.env.example` to `.env` and fill in your real `DATABASE_URL`. Note:
+if your password contains special characters like `@`, they must be
+URL-encoded (`@` becomes `%40`).
 
-Open `.env` and paste your real `DATABASE_URL` from Supabase.
+### 4. Apply the schema
 
-## 4. Apply the schema
-
-Using `psql`:
 ```bash
 psql "$DATABASE_URL" -f schema.sql
+psql "$DATABASE_URL" -f schema_week2.sql
 ```
 
-Or paste the contents of `schema.sql` into Supabase's **SQL Editor** and run it.
+(Or paste both files into Supabase's SQL Editor and run them.)
 
-## 5. Run the server
+### 5. Run the server
 
 ```bash
 npm run dev
 ```
 
-You should see `Vault API running on http://localhost:4000`.
 Check it's alive: `curl http://localhost:4000/health`
 
-## 6. Try it end to end with curl
-
-```bash
-# Create a user directly in the DB for now (auth comes later)
-psql "$DATABASE_URL" -c "insert into users (name, email) values ('You', 'you@example.com') returning id;"
-# copy the returned id into USER_ID below
-
-USER_ID="paste-the-id-here"
-
-# Create a wallet
-curl -X POST localhost:4000/wallets -H "Content-Type: application/json" \
-  -d "{\"userId\": \"$USER_ID\"}"
-# copy the returned wallet id
-
-WALLET_ID="paste-wallet-id-here"
-
-# Create two buckets
-curl -X POST localhost:4000/wallets/$WALLET_ID/buckets -H "Content-Type: application/json" \
-  -d '{"name": "Food", "type": "general", "color": "green"}'
-curl -X POST localhost:4000/wallets/$WALLET_ID/buckets -H "Content-Type: application/json" \
-  -d '{"name": "Savings", "type": "savings", "color": "blue"}'
-# copy both bucket ids
-
-# Deposit 5000 and split it across both buckets
-curl -X POST localhost:4000/wallets/$WALLET_ID/deposit -H "Content-Type: application/json" \
-  -d '{
-    "amount": 5000,
-    "allocations": [
-      { "bucketId": "FOOD_BUCKET_ID", "amount": 3000 },
-      { "bucketId": "SAVINGS_BUCKET_ID", "amount": 2000 }
-    ]
-  }'
-
-# Spend from Food
-curl -X POST localhost:4000/buckets/FOOD_BUCKET_ID/spend -H "Content-Type: application/json" \
-  -d '{"amount": 500, "note": "groceries"}'
-
-# Lock Savings, then try to spend from it (should be rejected)
-curl -X POST localhost:4000/buckets/SAVINGS_BUCKET_ID/lock -H "Content-Type: application/json" -d '{}'
-curl -X POST localhost:4000/buckets/SAVINGS_BUCKET_ID/spend -H "Content-Type: application/json" \
-  -d '{"amount": 100}'
-# -> 400 "This bucket is locked and cannot be spent from directly."
-
-# See transaction history
-curl localhost:4000/buckets/FOOD_BUCKET_ID/ledger
-```
-
-## 7. Prove the core invariant holds under concurrency
+## Proving correctness
 
 ```bash
 npm run test:concurrency
 ```
 
-Expected output ends with `PASS: concurrency safety holds.` — two
-simultaneous spends of 700 each on a bucket holding 1000 should result in
-exactly one success, one rejection, and a final balance of 300 (never
-negative, never double-spent).
+This fires two simultaneous spend attempts at a bucket that individually fit
+but together exceed its balance. Exactly one should succeed and one should be
+rejected, with the final balance never going negative — proving the
+row-locking actually prevents a double-spend under a real race condition.
 
-## What to build next (Week 2)
+## API overview
 
-- `is_locked` + explicit unlock is already here — next add custodial buckets
-  (`custodian_name`, `due_date`) with a reminder job
-- Real payments: Razorpay sandbox order creation + webhook that calls
-  `spendFromBucket` only after payment is server-confirmed
+```
+POST /wallets                          create a wallet
+POST /wallets/:id/buckets              create a bucket
+GET  /wallets/:id/buckets              list buckets in a wallet
+POST /wallets/:id/deposit              deposit + allocate across buckets
+POST /buckets/:id/spend                spend from a bucket
+POST /buckets/:id/transfer             transfer between buckets
+POST /buckets/:id/lock                 lock a bucket (excludes it from spend)
+POST /buckets/:id/unlock               unlock a bucket
+GET  /buckets/:id/ledger               transaction history for a bucket
+```
+
+## Roadmap
+
+- Real payments via Razorpay sandbox (order creation + webhook-confirmed
+  spend, so a bucket is only debited once payment is server-confirmed)
+- Scheduled/recurring transfers
+- Budget limits with overspend alerts
+- Shared buckets for trips/events with per-person contribution tracking
+- Frontend dashboard
