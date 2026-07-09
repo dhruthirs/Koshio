@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const wallet = require('../services/walletService');
+const { checkAndSendReminders } = require('../services/reminderService');
 
 // Wrap async route handlers so thrown errors reach the error middleware
 // instead of crashing the process.
@@ -55,6 +56,14 @@ router.post('/buckets/:bucketId/unlock', wrap(async (req, res) => {
 router.get('/buckets/:bucketId/ledger', wrap(async (req, res) => {
   const entries = await wallet.getLedgerForBucket(req.params.bucketId);
   res.json(entries);
+}));
+
+// Manually triggers the custodial reminder check. In production this
+// also runs automatically once a day via the cron job in index.js —
+// this route exists so you can test it on demand without waiting.
+router.post('/reminders/check', wrap(async (req, res) => {
+  const count = await checkAndSendReminders();
+  res.json({ remindersSent: count });
 }));
 
 module.exports = router;

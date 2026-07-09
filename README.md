@@ -26,8 +26,9 @@ recorded in an append-only ledger.
 - **Locked buckets** — a locked bucket is excluded from the spend flow
   entirely; the only way to use that money is to explicitly transfer it out
   first, a separate deliberate action
-- **Custodial buckets** — hold money on behalf of someone else, with a
-  due-date reminder job
+- **Custodial buckets** — hold money on behalf of someone else, with an
+  automatic daily reminder job (plus a manual trigger endpoint for testing)
+  that fires once per due bucket and never repeats once sent
 - **Transfers between buckets** — atomic, with consistent lock ordering to
   avoid deadlocks
 - **Full transaction history** — every deposit, spend, and transfer writes
@@ -103,6 +104,7 @@ POST /buckets/:id/transfer             transfer between buckets
 POST /buckets/:id/lock                 lock a bucket (excludes it from spend)
 POST /buckets/:id/unlock               unlock a bucket
 GET  /buckets/:id/ledger               transaction history for a bucket
+POST /reminders/check                  manually trigger custodial reminder check
 ```
 
 ## Roadmap
