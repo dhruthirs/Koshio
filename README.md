@@ -105,12 +105,17 @@ POST /buckets/:id/lock                 lock a bucket (excludes it from spend)
 POST /buckets/:id/unlock               unlock a bucket
 GET  /buckets/:id/ledger               transaction history for a bucket
 POST /reminders/check                  manually trigger custodial reminder check
+POST /buckets/:id/create-payment-order create a real Razorpay sandbox payment order
+POST /webhooks/razorpay                Razorpay's server-to-server payment confirmation
 ```
 
 ## Roadmap
 
-- Real payments via Razorpay sandbox (order creation + webhook-confirmed
-  spend, so a bucket is only debited once payment is server-confirmed)
+- **Real payments via Razorpay** — creates a sandbox order, opens checkout,
+  and only debits the chosen bucket once Razorpay's webhook server-confirms
+  the payment; idempotent against retried/duplicate webhook deliveries so a
+  failed attempt followed by a successful retry on the same order still
+  debits correctly exactly once
 - Scheduled/recurring transfers
 - Budget limits with overspend alerts
 - Shared buckets for trips/events with per-person contribution tracking

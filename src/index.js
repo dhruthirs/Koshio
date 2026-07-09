@@ -3,15 +3,23 @@ const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
 const bucketRoutes = require('./routes/buckets');
+const paymentRoutes = require('./routes/payments');
 const { LedgerError } = require('./services/walletService');
 const { checkAndSendReminders } = require('./services/reminderService');
 
 const app = express();
 app.use(cors());
+
+// The webhook route needs the raw request body (as bytes) to verify
+// Razorpay's signature. This raw parser is scoped ONLY to that path.
+// express.json() below checks whether a body was already parsed and
+// skips re-parsing if so, so this ordering is safe for every other route.
+app.use('/webhooks/razorpay', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/', bucketRoutes);
+app.use('/', paymentRoutes);
 
 // Central error handler: LedgerError means the request itself was invalid
 // (locked bucket, insufficient balance, bad allocation) -> 400.

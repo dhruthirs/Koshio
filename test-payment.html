@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Koshio — Test Payment</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px; }
+    input, button { width: 100%; padding: 10px; margin: 8px 0; font-size: 16px; box-sizing: border-box; }
+    button { background: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    #status { margin-top: 16px; font-size: 14px; color: #555; }
+  </style>
+</head>
+<body>
+  <h2>Test a real payment against a bucket</h2>
+  <p>Paste a bucket id (e.g. your "Food" bucket) and an amount, then pay with a test card.</p>
+
+  <label>Bucket ID</label>
+  <input id="bucketId" placeholder="e.g. 0581c09b-5e02-40e0-b248-6bcad6a2f46a">
+
+  <label>Amount (INR)</label>
+  <input id="amount" type="number" value="100">
+
+  <button onclick="startPayment()">Pay</button>
+  <div id="status"></div>
+
+  <script>
+    async function startPayment() {
+      const bucketId = document.getElementById('bucketId').value.trim();
+      const amount = Number(document.getElementById('amount').value);
+      const statusEl = document.getElementById('status');
+
+      if (!bucketId) { statusEl.textContent = 'Enter a bucket id first.'; return; }
+      statusEl.textContent = 'Creating order...';
+
+      const res = await fetch(`http://localhost:4000/buckets/${bucketId}/create-payment-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, note: 'Test payment from Koshio test page' }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusEl.textContent = 'Error: ' + (data.error || 'unknown error');
+        return;
+      }
+
+      statusEl.textContent = 'Opening checkout...';
+
+      const options = {
+        key: data.keyId,
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        name: 'Koshio (Test Mode)',
+        description: 'Test payment',
+        order_id: data.orderId,
+        handler: function (response) {
+          statusEl.textContent =
+            'Payment submitted. Payment ID: ' + response.razorpay_payment_id +
+            '. Check your server terminal for the webhook confirmation, then refresh your bucket balance.';
+        },
+        theme: { color: '#0d6efd' },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        statusEl.textContent = 'Payment failed (this is expected if you used a failure test card).';
+      });
+      rzp.open();
+    }
+  </script>
+</body>
+</html>
