@@ -107,6 +107,8 @@ GET  /buckets/:id/ledger               transaction history for a bucket
 POST /reminders/check                  manually trigger custodial reminder check
 POST /buckets/:id/create-payment-order create a real Razorpay sandbox payment order
 POST /webhooks/razorpay                Razorpay's server-to-server payment confirmation
+POST /scheduled-transfers              create a recurring transfer rule
+POST /scheduled-transfers/run          manually run due scheduled transfers
 ```
 
 ## Testing real payments locally
@@ -136,7 +138,9 @@ testing requires a tunnel:
   the payment; idempotent against retried/duplicate webhook deliveries so a
   failed attempt followed by a successful retry on the same order still
   debits correctly exactly once
-- Scheduled/recurring transfers
+- **Scheduled transfers** — recurring automatic transfers between buckets
+  (daily/weekly/monthly), run by a daily cron job reusing the same atomic
+  transfer logic as manual transfers
 - Budget limits with overspend alerts
 - Shared buckets for trips/events with per-person contribution tracking
 - Frontend dashboard

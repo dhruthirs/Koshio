@@ -6,6 +6,7 @@ const bucketRoutes = require('./routes/buckets');
 const paymentRoutes = require('./routes/payments');
 const { LedgerError } = require('./services/walletService');
 const { checkAndSendReminders } = require('./services/reminderService');
+const { runDueScheduledTransfers } = require('./services/scheduledTransferService');
 
 const app = express();
 app.use(cors());
@@ -39,4 +40,10 @@ app.listen(PORT, () => console.log(`Vault API running on http://localhost:${PORT
 // (e.g. "Rahul's money") whose due date is within 24 hours and reminds once.
 cron.schedule('0 9 * * *', () => {
   checkAndSendReminders().catch(err => console.error('Reminder job failed:', err));
+});
+
+// Runs every day at 9:05 AM — executes any scheduled transfers whose
+// next_run_at has arrived (e.g. "move ₹2000 to Savings every month").
+cron.schedule('5 9 * * *', () => {
+  runDueScheduledTransfers().catch(err => console.error('Scheduled transfer job failed:', err));
 });

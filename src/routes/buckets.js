@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const wallet = require('../services/walletService');
 const { checkAndSendReminders } = require('../services/reminderService');
+const { createScheduledTransfer, runDueScheduledTransfers } = require('../services/scheduledTransferService');
 
 // Wrap async route handlers so thrown errors reach the error middleware
 // instead of crashing the process.
@@ -64,6 +65,19 @@ router.get('/buckets/:bucketId/ledger', wrap(async (req, res) => {
 router.post('/reminders/check', wrap(async (req, res) => {
   const count = await checkAndSendReminders();
   res.json({ remindersSent: count });
+}));
+
+router.post('/scheduled-transfers', wrap(async (req, res) => {
+  const { fromBucketId, toBucketId, amount, frequency, nextRunAt } = req.body;
+  const created = await createScheduledTransfer(fromBucketId, toBucketId, amount, frequency, nextRunAt);
+  res.status(201).json(created);
+}));
+
+// Manually trigger due scheduled transfers, for testing without waiting
+// for the automatic daily cron in index.js.
+router.post('/scheduled-transfers/run', wrap(async (req, res) => {
+  const count = await runDueScheduledTransfers();
+  res.json({ transfersRun: count });
 }));
 
 module.exports = router;
