@@ -47,6 +47,9 @@ recorded in an append-only ledger.
 - **Savings goals** — set a target amount and deadline on any bucket; a
   progress endpoint computes percent complete, amount remaining, and days
   left, purely from stored data
+- **Shared buckets** — track per-person contributions into a trip/event
+  bucket; each contribution atomically updates the bucket and wallet
+  balance and is attributed to the contributor by name
 
 ## Architecture
 
@@ -127,6 +130,8 @@ POST /buckets/:id/limit                set or clear a bucket's monthly spending 
 GET  /wallets/:id/notifications        list overspend/other alerts for a wallet
 POST /buckets/:id/goal                 set a savings goal (amount + deadline) on a bucket
 GET  /buckets/:id/goal-progress        percent complete, remaining amount, days left
+POST /buckets/:id/contributions        record a named contribution into a shared bucket
+GET  /buckets/:id/contributions        list contributions and per-person totals
 ```
 
 ## Testing real payments locally
@@ -151,5 +156,4 @@ testing requires a tunnel:
 
 ## Roadmap
 
-- Shared buckets for trips/events with per-person contribution tracking
 - Frontend dashboard

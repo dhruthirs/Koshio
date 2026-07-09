@@ -5,6 +5,7 @@ const { checkAndSendReminders } = require('../services/reminderService');
 const { createScheduledTransfer, runDueScheduledTransfers } = require('../services/scheduledTransferService');
 const { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet } = require('../services/budgetService');
 const { setGoal, getGoalProgress } = require('../services/goalService');
+const { addContribution, getContributions } = require('../services/sharedBucketService');
 
 // Wrap async route handlers so thrown errors reach the error middleware
 // instead of crashing the process.
@@ -60,6 +61,17 @@ router.post('/buckets/:bucketId/goal', wrap(async (req, res) => {
 router.get('/buckets/:bucketId/goal-progress', wrap(async (req, res) => {
   const progress = await getGoalProgress(req.params.bucketId);
   res.json(progress);
+}));
+
+router.post('/buckets/:bucketId/contributions', wrap(async (req, res) => {
+  const { contributorName, amount } = req.body;
+  const contribution = await addContribution(req.params.bucketId, contributorName, amount);
+  res.status(201).json(contribution);
+}));
+
+router.get('/buckets/:bucketId/contributions', wrap(async (req, res) => {
+  const contributions = await getContributions(req.params.bucketId);
+  res.json(contributions);
 }));
 
 router.post('/buckets/:bucketId/transfer', wrap(async (req, res) => {
