@@ -109,6 +109,8 @@ POST /buckets/:id/create-payment-order create a real Razorpay sandbox payment or
 POST /webhooks/razorpay                Razorpay's server-to-server payment confirmation
 POST /scheduled-transfers              create a recurring transfer rule
 POST /scheduled-transfers/run          manually run due scheduled transfers
+POST /buckets/:id/limit                set or clear a bucket's monthly spending limit
+GET  /wallets/:id/notifications        list overspend/other alerts for a wallet
 ```
 
 ## Testing real payments locally
@@ -141,6 +143,8 @@ testing requires a tunnel:
 - **Scheduled transfers** — recurring automatic transfers between buckets
   (daily/weekly/monthly), run by a daily cron job reusing the same atomic
   transfer logic as manual transfers
-- Budget limits with overspend alerts
+- **Budget limits + overspend alerts** — set a monthly spending limit per
+  bucket; every spend (manual or webhook-confirmed) checks month-to-date
+  totals against it and logs a notification if crossed
 - Shared buckets for trips/events with per-person contribution tracking
 - Frontend dashboard

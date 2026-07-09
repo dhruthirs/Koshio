@@ -3,6 +3,7 @@ const router = express.Router();
 const wallet = require('../services/walletService');
 const { checkAndSendReminders } = require('../services/reminderService');
 const { createScheduledTransfer, runDueScheduledTransfers } = require('../services/scheduledTransferService');
+const { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet } = require('../services/budgetService');
 
 // Wrap async route handlers so thrown errors reach the error middleware
 // instead of crashing the process.
@@ -34,7 +35,19 @@ router.post('/wallets/:walletId/deposit', wrap(async (req, res) => {
 router.post('/buckets/:bucketId/spend', wrap(async (req, res) => {
   const { amount, note } = req.body;
   const result = await wallet.spendFromBucket(req.params.bucketId, amount, note);
-  res.json(result);
+  const budgetStatus = await checkBudgetAfterSpend(req.params.bucketId);
+  res.json({ ...result, budgetStatus });
+}));
+
+router.post('/buckets/:bucketId/limit', wrap(async (req, res) => {
+  const { monthlyLimit } = req.body;
+  const updated = await setMonthlyLimit(req.params.bucketId, monthlyLimit);
+  res.json(updated);
+}));
+
+router.get('/wallets/:walletId/notifications', wrap(async (req, res) => {
+  const notifications = await getNotificationsForWallet(req.params.walletId);
+  res.json(notifications);
 }));
 
 router.post('/buckets/:bucketId/transfer', wrap(async (req, res) => {

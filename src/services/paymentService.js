@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const pool = require('../db');
 const { spendFromBucket, LedgerError } = require('./walletService');
+const { checkBudgetAfterSpend } = require('./budgetService');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -76,6 +77,7 @@ async function handlePaymentOutcome(orderId, razorpayPaymentId, succeeded) {
 
   if (succeeded) {
     await spendFromBucket(payment.bucket_id, payment.amount, payment.note);
+    await checkBudgetAfterSpend(payment.bucket_id);
     await pool.query(
       `update payments set status = 'success', razorpay_payment_id = $1, updated_at = now() where order_id = $2`,
       [razorpayPaymentId, orderId]
