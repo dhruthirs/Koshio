@@ -33,6 +33,20 @@ recorded in an append-only ledger.
   avoid deadlocks
 - **Full transaction history** — every deposit, spend, and transfer writes
   an immutable row to the ledger
+- **Real payments via Razorpay** — creates a sandbox order, opens checkout,
+  and only debits the chosen bucket once Razorpay's webhook server-confirms
+  the payment; idempotent against retried/duplicate webhook deliveries so a
+  failed attempt followed by a successful retry on the same order still
+  debits correctly exactly once
+- **Scheduled transfers** — recurring automatic transfers between buckets
+  (daily/weekly/monthly), run by a daily cron job reusing the same atomic
+  transfer logic as manual transfers
+- **Budget limits + overspend alerts** — set a monthly spending limit per
+  bucket; every spend (manual or webhook-confirmed) checks month-to-date
+  totals against it and logs a notification if crossed
+- **Savings goals** — set a target amount and deadline on any bucket; a
+  progress endpoint computes percent complete, amount remaining, and days
+  left, purely from stored data
 
 ## Architecture
 
@@ -111,6 +125,8 @@ POST /scheduled-transfers              create a recurring transfer rule
 POST /scheduled-transfers/run          manually run due scheduled transfers
 POST /buckets/:id/limit                set or clear a bucket's monthly spending limit
 GET  /wallets/:id/notifications        list overspend/other alerts for a wallet
+POST /buckets/:id/goal                 set a savings goal (amount + deadline) on a bucket
+GET  /buckets/:id/goal-progress        percent complete, remaining amount, days left
 ```
 
 ## Testing real payments locally
@@ -135,16 +151,5 @@ testing requires a tunnel:
 
 ## Roadmap
 
-- **Real payments via Razorpay** — creates a sandbox order, opens checkout,
-  and only debits the chosen bucket once Razorpay's webhook server-confirms
-  the payment; idempotent against retried/duplicate webhook deliveries so a
-  failed attempt followed by a successful retry on the same order still
-  debits correctly exactly once
-- **Scheduled transfers** — recurring automatic transfers between buckets
-  (daily/weekly/monthly), run by a daily cron job reusing the same atomic
-  transfer logic as manual transfers
-- **Budget limits + overspend alerts** — set a monthly spending limit per
-  bucket; every spend (manual or webhook-confirmed) checks month-to-date
-  totals against it and logs a notification if crossed
 - Shared buckets for trips/events with per-person contribution tracking
 - Frontend dashboard
