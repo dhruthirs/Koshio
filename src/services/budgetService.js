@@ -50,4 +50,12 @@ async function getNotificationsForWallet(walletId) {
   return rows;
 }
 
-module.exports = { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet };
+async function markNotificationRead(notificationId) {
+  const { rows } = await pool.query(
+    `update notifications set is_read = true where id = $1 returning *`,
+    [notificationId]
+  );
+  return rows[0];
+}
+
+module.exports = { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet, markNotificationRead };

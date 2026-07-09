@@ -26,6 +26,8 @@ export const api = {
   unlock: (bucketId) => request(`/buckets/${bucketId}/unlock`, { method: 'POST', body: '{}' }),
   ledger: (bucketId) => request(`/buckets/${bucketId}/ledger`),
   notifications: (walletId) => request(`/wallets/${walletId}/notifications`),
+  markNotificationRead: (notificationId) =>
+    request(`/notifications/${notificationId}/read`, { method: 'POST', body: '{}' }),
   goalProgress: (bucketId) => request(`/buckets/${bucketId}/goal-progress`),
   contributions: (bucketId) => request(`/buckets/${bucketId}/contributions`),
 };

@@ -3,7 +3,7 @@ const router = express.Router();
 const wallet = require('../services/walletService');
 const { checkAndSendReminders } = require('../services/reminderService');
 const { createScheduledTransfer, runDueScheduledTransfers } = require('../services/scheduledTransferService');
-const { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet } = require('../services/budgetService');
+const { setMonthlyLimit, checkBudgetAfterSpend, getNotificationsForWallet, markNotificationRead } = require('../services/budgetService');
 const { setGoal, getGoalProgress } = require('../services/goalService');
 const { addContribution, getContributions } = require('../services/sharedBucketService');
 
@@ -50,6 +50,11 @@ router.post('/buckets/:bucketId/limit', wrap(async (req, res) => {
 router.get('/wallets/:walletId/notifications', wrap(async (req, res) => {
   const notifications = await getNotificationsForWallet(req.params.walletId);
   res.json(notifications);
+}));
+
+router.post('/notifications/:notificationId/read', wrap(async (req, res) => {
+  const updated = await markNotificationRead(req.params.notificationId);
+  res.json(updated);
 }));
 
 router.post('/buckets/:bucketId/goal', wrap(async (req, res) => {

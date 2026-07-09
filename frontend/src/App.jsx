@@ -50,8 +50,18 @@ export default function App() {
       {notifications.length > 0 && (
         <div className="max-w-5xl mx-auto px-6 mb-4">
           {notifications.map((n) => (
-            <div key={n.id} className="bg-coral/10 border border-coral/30 text-coral text-sm font-body rounded-md px-4 py-2 mb-2">
-              {n.message}
+            <div key={n.id} className="flex items-center justify-between gap-3 bg-coral/10 border border-coral/30 text-coral text-sm font-body rounded-md px-4 py-2 mb-2">
+              <span>{n.message}</span>
+              <button
+                onClick={async () => {
+                  await api.markNotificationRead(n.id);
+                  refresh();
+                }}
+                className="text-coral/70 hover:text-coral shrink-0"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>
