@@ -109,6 +109,26 @@ POST /buckets/:id/create-payment-order create a real Razorpay sandbox payment or
 POST /webhooks/razorpay                Razorpay's server-to-server payment confirmation
 ```
 
+## Testing real payments locally
+
+Razorpay needs a public URL to send webhook confirmations to, so local
+testing requires a tunnel:
+
+1. Run `ngrok http 4000` in a separate terminal — copy the `https://...
+   ngrok-free.dev` URL it prints (this changes every time you restart ngrok,
+   on the free tier)
+2. In Razorpay dashboard → Settings → Webhooks, set the webhook URL to
+   `https://YOUR-NGROK-URL/webhooks/razorpay`, with events `payment.captured`
+   and `payment.failed`, and a secret matching `RAZORPAY_WEBHOOK_SECRET` in
+   your `.env`
+3. Open `test-payment.html` directly in a browser (no server needed for this
+   file itself) — enter a bucket id and amount, click Pay
+4. In the checkout popup, use **Netbanking → pick any bank → Success** —
+   this is the most reliable test path; card test numbers can behave
+   inconsistently on unactivated sandbox accounts
+5. Check the bucket's balance afterward to confirm the webhook-confirmed
+   debit actually happened
+
 ## Roadmap
 
 - **Real payments via Razorpay** — creates a sandbox order, opens checkout,
