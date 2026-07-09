@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* The signature element: an envelope-card with a torn top edge,
+   evoking a physical paper envelope holding a portion of money. */
+.envelope-card {
+  position: relative;
+  background: #F7F2E7;
+  clip-path: polygon(
+    0% 3%, 4% 0%, 8% 3%, 12% 0%, 16% 3%, 20% 0%, 24% 3%, 28% 0%,
+    32% 3%, 36% 0%, 40% 3%, 44% 0%, 48% 3%, 52% 0%, 56% 3%, 60% 0%,
+    64% 3%, 68% 0%, 72% 3%, 76% 0%, 80% 3%, 84% 0%, 88% 3%, 92% 0%,
+    96% 3%, 100% 0%, 100% 100%, 0% 100%
+  );
+  padding-top: 28px;
+}
+
+.envelope-card.locked {
+  background: linear-gradient(180deg, #F7F2E7 0%, #F2E4DC 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .envelope-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .envelope-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.35);
+  }
+}

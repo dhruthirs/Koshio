@@ -56,6 +56,10 @@ recorded in an append-only ledger.
 - **Database:** PostgreSQL (hosted on Supabase) — chosen specifically for
   real transactional guarantees and row-level locking
 - **Backend:** Node.js + Express
+- **Frontend:** React + Vite + Tailwind, in `frontend/` — a dashboard of
+  bucket "envelope" cards with live balances, lock/goal/limit indicators,
+  a deposit-allocation screen, a pay screen (real Razorpay checkout or
+  manual entry), and per-bucket transaction history
 - **Core invariant:** `wallet.total_balance` always equals the sum of every
   bucket's balance under it; every operation updates both sides inside a
   single database transaction
@@ -97,6 +101,18 @@ npm run dev
 ```
 
 Check it's alive: `curl http://localhost:4000/health`
+
+### 6. Run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The wallet id is currently hardcoded in
+`frontend/src/App.jsx` (`WALLET_ID`) — swap it for your own, or wire up
+real auth/wallet lookup later.
 
 ## Proving correctness
 
@@ -156,4 +172,8 @@ testing requires a tunnel:
 
 ## Roadmap
 
-- Frontend dashboard
+Every feature originally planned is shipped: ledger core, locking,
+custodial buckets with reminders, real webhook-confirmed payments,
+scheduled transfers, budget alerts, savings goals, shared buckets, and a
+full frontend dashboard. Possible next steps: real authentication (the
+wallet id is currently hardcoded), and a notification "mark as read" action.
