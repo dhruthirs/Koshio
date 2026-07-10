@@ -1,5 +1,8 @@
 # Koshio — Virtual Money Vault Engine
 
+**Live:** https://koshio.vercel.app (frontend) · backend on Railway,
+database on Supabase, payments via Razorpay.
+
 A backend that lets you split one real account balance into purpose-based
 buckets (envelopes) — rent, savings, trip funds, money you're holding for a
 friend — instead of seeing one undifferentiated number. Every bucket has its
@@ -65,10 +68,13 @@ recorded in an append-only ledger.
   logged-in user — calls it directly)
 - **Frontend:** React + Vite + Tailwind, in `frontend/` — login/signup,
   a dashboard of colorful bucket cards with live balances, lock/goal/limit
-  indicators and inline shared-bucket contributions, a deposit-allocation
+  indicators, an inline donut chart of how money is split across buckets,
+  and inline shared-bucket contributions, a deposit-allocation
   screen, a pay screen (real Razorpay checkout or manual entry), per-bucket
   transaction history, and bucket editing/deletion. Responsive down to
   mobile widths.
+- **Deployment:** frontend on Vercel, backend on Railway, database on
+  Supabase — pushing to `main` auto-deploys both
 - **Core invariant:** `wallet.total_balance` always equals the sum of every
   bucket's balance under it; every operation updates both sides inside a
   single database transaction
