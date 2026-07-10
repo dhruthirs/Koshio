@@ -3,6 +3,7 @@ import { api } from './api';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BucketCard from './components/BucketCard';
+import DonutChart from './components/DonutChart';
 import AllocateForm from './components/AllocateForm';
 import PayForm from './components/PayForm';
 import HistoryPanel from './components/HistoryPanel';
@@ -98,19 +99,26 @@ export default function App() {
         {loading ? (
           <p className="font-body text-inkSoft">Loading...</p>
         ) : tab === 'Dashboard' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {buckets.length === 0 ? (
-              <p className="font-body text-inkSoft">No buckets yet — create one to get started.</p>
-            ) : (
-              buckets.map((b) => <BucketCard key={b.id} bucket={b} onChanged={refresh} />)
-            )}
+          <div className="animate-fade-in">
+            {buckets.length > 0 && <DonutChart buckets={buckets} />}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {buckets.length === 0 ? (
+                <p className="font-body text-inkSoft">No buckets yet — create one to get started.</p>
+              ) : (
+                buckets.map((b, i) => (
+                  <div key={b.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                    <BucketCard bucket={b} onChanged={refresh} />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         ) : tab === 'Money in' ? (
-          <AllocateForm walletId={walletId} buckets={buckets} onDone={refresh} />
+          <div className="animate-fade-in"><AllocateForm walletId={walletId} buckets={buckets} onDone={refresh} /></div>
         ) : tab === 'Pay' ? (
-          <PayForm buckets={buckets} onDone={refresh} />
+          <div className="animate-fade-in"><PayForm buckets={buckets} onDone={refresh} /></div>
         ) : (
-          <HistoryPanel buckets={buckets} />
+          <div className="animate-fade-in"><HistoryPanel buckets={buckets} /></div>
         )}
       </main>
 

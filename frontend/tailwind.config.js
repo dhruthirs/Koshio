@@ -18,7 +18,7 @@ export default {
       },
       fontFamily: {
         display: ['Fraunces', 'serif'],
-        body: ['"Baloo 2"', 'sans-serif'],
+        body: ['"Plus Jakarta Sans"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
       },
     },
