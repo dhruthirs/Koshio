@@ -59,10 +59,7 @@ router.get('/wallets/:walletId/notifications', wrap(async (req, res) => {
 }));
 
 router.post('/notifications/:notificationId/read', wrap(async (req, res) => {
-  // Notifications don't carry a wallet id in the URL, so ownership is
-  // implicitly whoever's wallet it was created under; a full check would
-  // join through bucket -> wallet -> user, skipped here for brevity.
-  const updated = await markNotificationRead(req.params.notificationId);
+  const updated = await markNotificationRead(req.params.notificationId, req.userId);
   res.json(updated);
 }));
 

@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { LedgerError } = require('./walletService');
 
 /** Sets or clears a bucket's monthly spending limit. Pass null to remove it. */
 async function setMonthlyLimit(bucketId, monthlyLimit) {
@@ -50,11 +51,15 @@ async function getNotificationsForWallet(walletId) {
   return rows;
 }
 
-async function markNotificationRead(notificationId) {
+async function markNotificationRead(notificationId, userId) {
   const { rows } = await pool.query(
-    `update notifications set is_read = true where id = $1 returning *`,
-    [notificationId]
+    `update notifications n set is_read = true
+     from wallets w
+     where n.id = $1 and n.wallet_id = w.id and w.user_id = $2
+     returning n.*`,
+    [notificationId, userId]
   );
+  if (rows.length === 0) throw new LedgerError('Notification not found.');
   return rows[0];
 }
 

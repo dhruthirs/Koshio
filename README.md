@@ -190,10 +190,11 @@ testing requires a tunnel:
 Every feature originally planned is shipped: ledger core, locking,
 custodial buckets with reminders, real webhook-confirmed payments,
 scheduled transfers, budget alerts, savings goals, shared buckets, real
-authentication, and a full responsive frontend. Known, honest gaps:
-the `/reminders/check` and `/scheduled-transfers/run` maintenance endpoints
+authentication, and a full responsive frontend. Cross-account isolation
+was verified directly: a second account was confirmed unable to read a
+bucket belonging to the first, even with its real id, using a real login
+token — not just inspected in code. One known, honest gap remains: the
+`/reminders/check` and `/scheduled-transfers/run` maintenance endpoints
 operate globally across all users rather than being scoped to one wallet
-(mirroring what the daily cron already does), and the notification
-"mark as read" route doesn't yet verify the notification belongs to the
-calling user's wallet. Neither is exploitable for money movement, but both
-are worth tightening before this handles real users beyond a demo.
+(mirroring what the daily cron already does). Not exploitable for money
+movement, but worth tightening before this handles real users beyond a demo.
