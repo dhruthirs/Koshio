@@ -18,6 +18,10 @@ recorded in an append-only ledger.
 
 ## Core features
 
+- **Authentication** — real signup/login with bcrypt-hashed passwords and
+  JWTs; every route checks that the wallet or bucket in the URL actually
+  belongs to the logged-in user before touching it, so one account can
+  never read or spend from another's money
 - **Bucket-based allocation** — split any incoming deposit across buckets in
   one atomic step; allocations must sum exactly to the deposit
 - **Concurrency-safe spending** — row-level locking (`SELECT ... FOR UPDATE`)
@@ -55,11 +59,16 @@ recorded in an append-only ledger.
 
 - **Database:** PostgreSQL (hosted on Supabase) — chosen specifically for
   real transactional guarantees and row-level locking
-- **Backend:** Node.js + Express
-- **Frontend:** React + Vite + Tailwind, in `frontend/` — a dashboard of
-  bucket "envelope" cards with live balances, lock/goal/limit indicators,
-  a deposit-allocation screen, a pay screen (real Razorpay checkout or
-  manual entry), and per-bucket transaction history
+- **Backend:** Node.js + Express, with JWT-based auth middleware protecting
+  every route except signup/login and the Razorpay webhook (which is
+  authenticated instead by its signature, since Razorpay's server — not a
+  logged-in user — calls it directly)
+- **Frontend:** React + Vite + Tailwind, in `frontend/` — login/signup,
+  a dashboard of colorful bucket cards with live balances, lock/goal/limit
+  indicators and inline shared-bucket contributions, a deposit-allocation
+  screen, a pay screen (real Razorpay checkout or manual entry), per-bucket
+  transaction history, and bucket editing/deletion. Responsive down to
+  mobile widths.
 - **Core invariant:** `wallet.total_balance` always equals the sum of every
   bucket's balance under it; every operation updates both sides inside a
   single database transaction
@@ -81,15 +90,18 @@ npm install
 
 ### 3. Configure environment
 
-Copy `.env.example` to `.env` and fill in your real `DATABASE_URL`. Note:
-if your password contains special characters like `@`, they must be
-URL-encoded (`@` becomes `%40`).
+Copy `.env.example` to `.env` and fill in your real `DATABASE_URL`, plus a
+`JWT_SECRET` (any long random string — used to sign login tokens) and your
+Razorpay test keys. Note: if your DB password contains special characters
+like `@`, they must be URL-encoded (`@` becomes `%40`).
 
 ### 4. Apply the schema
 
 ```bash
 psql "$DATABASE_URL" -f schema.sql
 psql "$DATABASE_URL" -f schema_week2.sql
+psql "$DATABASE_URL" -f schema_week3.sql
+psql "$DATABASE_URL" -f schema_week4.sql
 ```
 
 (Or paste both files into Supabase's SQL Editor and run them.)
@@ -128,9 +140,12 @@ row-locking actually prevents a double-spend under a real race condition.
 ## API overview
 
 ```
-POST /wallets                          create a wallet
+POST /auth/signup                      create an account (returns a token + wallet id)
+POST /auth/login                       log in (returns a token + wallet id)
 POST /wallets/:id/buckets              create a bucket
 GET  /wallets/:id/buckets              list buckets in a wallet
+PATCH /buckets/:id                     rename/recolor/edit a bucket
+DELETE /buckets/:id                    delete a bucket (refused if it still holds money)
 POST /wallets/:id/deposit              deposit + allocate across buckets
 POST /buckets/:id/spend                spend from a bucket
 POST /buckets/:id/transfer             transfer between buckets
@@ -174,6 +189,11 @@ testing requires a tunnel:
 
 Every feature originally planned is shipped: ledger core, locking,
 custodial buckets with reminders, real webhook-confirmed payments,
-scheduled transfers, budget alerts, savings goals, shared buckets, and a
-full frontend dashboard. Possible next steps: real authentication (the
-wallet id is currently hardcoded), and a notification "mark as read" action.
+scheduled transfers, budget alerts, savings goals, shared buckets, real
+authentication, and a full responsive frontend. Known, honest gaps:
+the `/reminders/check` and `/scheduled-transfers/run` maintenance endpoints
+operate globally across all users rather than being scoped to one wallet
+(mirroring what the daily cron already does), and the notification
+"mark as read" route doesn't yet verify the notification belongs to the
+calling user's wallet. Neither is exploitable for money movement, but both
+are worth tightening before this handles real users beyond a demo.

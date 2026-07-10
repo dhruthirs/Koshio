@@ -17,36 +17,34 @@ export default function HistoryPanel({ buckets }) {
   };
 
   return (
-    <div className="bg-inkSoft rounded-xl p-6 max-w-2xl">
-      <h3 className="font-display text-xl text-parchment mb-4">Transaction history</h3>
+    <div className="bg-white rounded-3xl p-6 max-w-2xl shadow-sm">
+      <h3 className="font-display font-semibold text-2xl text-ink mb-4">Transaction history</h3>
       <select
         value={bucketId}
         onChange={(e) => setBucketId(e.target.value)}
-        className="w-full mb-4 bg-ink text-parchment font-body rounded-md px-3 py-2 border border-parchment/10 focus:outline-none focus:border-brass"
+        className="w-full mb-4 bg-paper text-ink font-body rounded-2xl px-4 py-2.5 border-2 border-ink/10 focus:outline-none focus:border-teal"
       >
-        {buckets.map((b) => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
+        {buckets.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
 
       {entries.length === 0 ? (
-        <p className="font-body text-sm text-parchment/40">No transactions yet for this bucket.</p>
+        <p className="font-body text-sm text-inkSoft">No transactions yet for this bucket.</p>
       ) : (
         <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
           {entries.map((e) => (
-            <div key={e.id} className="flex justify-between items-center border-b border-parchment/10 pb-2">
+            <div key={e.id} className="flex justify-between items-center border-b-2 border-paper pb-2">
               <div>
-                <p className="font-body text-sm text-parchment/90">
+                <p className="font-body text-sm font-medium text-ink">
                   {TYPE_LABEL[e.entry_type] || e.entry_type}
-                  {e.note && <span className="text-parchment/40"> · {e.note}</span>}
+                  {e.note && <span className="text-inkSoft"> · {e.note}</span>}
                 </p>
-                <p className="font-body text-xs text-parchment/40">
+                <p className="font-body text-xs text-inkSoft">
                   {new Date(e.created_at).toLocaleString('en-IN')}
                 </p>
               </div>
               <span
-                className={`font-mono text-sm ${
-                  e.entry_type === 'withdraw' || e.entry_type === 'transfer_out' ? 'text-coral' : 'text-sage'
+                className={`font-mono text-sm font-semibold ${
+                  e.entry_type === 'withdraw' || e.entry_type === 'transfer_out' ? 'text-rose' : 'text-mint'
                 }`}
               >
                 {e.entry_type === 'withdraw' || e.entry_type === 'transfer_out' ? '−' : '+'}₹

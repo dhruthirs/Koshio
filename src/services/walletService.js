@@ -203,6 +203,35 @@ async function transferBetweenBuckets(fromBucketId, toBucketId, amount) {
   }
 }
 
+async function updateBucket(bucketId, { name, color, custodianName, dueDate }) {
+  const { rows } = await pool.query(
+    `update buckets set
+       name = coalesce($1, name),
+       color = coalesce($2, color),
+       custodian_name = coalesce($3, custodian_name),
+       due_date = coalesce($4, due_date)
+     where id = $5 returning *`,
+    [name, color, custodianName, dueDate, bucketId]
+  );
+  if (rows.length === 0) throw new LedgerError('Bucket not found.');
+  return rows[0];
+}
+
+/**
+ * Deletes a bucket. Refuses if it still holds money — forcing an explicit
+ * transfer-out first, so money can never silently vanish by deleting its
+ * container. This mirrors the same "no shortcuts around money" principle
+ * as locked buckets.
+ */
+async function deleteBucket(bucketId) {
+  const { rows } = await pool.query(`select * from buckets where id = $1`, [bucketId]);
+  if (rows.length === 0) throw new LedgerError('Bucket not found.');
+  if (Number(rows[0].balance) > 0) {
+    throw new LedgerError('This bucket still holds money. Transfer it out before deleting.');
+  }
+  await pool.query(`delete from buckets where id = $1`, [bucketId]);
+  return { deleted: true };
+}
 async function setLock(bucketId, isLocked, lockUntil = null) {
   const { rows } = await pool.query(
     `update buckets set is_locked = $1, lock_until = $2 where id = $3 returning *`,
@@ -210,6 +239,24 @@ async function setLock(bucketId, isLocked, lockUntil = null) {
   );
   if (rows.length === 0) throw new LedgerError('Bucket not found.');
   return rows[0];
+}
+
+/** Throws if this wallet doesn't belong to this user — call at the top of any wallet-level route. */
+async function assertWalletOwnership(walletId, userId) {
+  const { rows } = await pool.query(
+    `select id from wallets where id = $1 and user_id = $2`,
+    [walletId, userId]
+  );
+  if (rows.length === 0) throw new LedgerError('Wallet not found.');
+}
+
+/** Throws if this bucket's wallet doesn't belong to this user — call at the top of any bucket-level route. */
+async function assertBucketOwnership(bucketId, userId) {
+  const { rows } = await pool.query(
+    `select b.id from buckets b join wallets w on w.id = b.wallet_id where b.id = $1 and w.user_id = $2`,
+    [bucketId, userId]
+  );
+  if (rows.length === 0) throw new LedgerError('Bucket not found.');
 }
 
 module.exports = {
@@ -222,4 +269,8 @@ module.exports = {
   spendFromBucket,
   transferBetweenBuckets,
   setLock,
+  updateBucket,
+  deleteBucket,
+  assertWalletOwnership,
+  assertBucketOwnership,
 };

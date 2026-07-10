@@ -2,9 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
+const authRoutes = require('./routes/auth');
+const webhookRoutes = require('./routes/webhooks');
 const bucketRoutes = require('./routes/buckets');
 const paymentRoutes = require('./routes/payments');
+const requireAuth = require('./middleware/requireAuth');
 const { LedgerError } = require('./services/walletService');
+const { AuthError } = require('./services/authService');
 const { checkAndSendReminders } = require('./services/reminderService');
 const { runDueScheduledTransfers } = require('./services/scheduledTransferService');
 
@@ -19,14 +23,22 @@ app.use('/webhooks/razorpay', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
-app.use('/', bucketRoutes);
-app.use('/', paymentRoutes);
 
-// Central error handler: LedgerError means the request itself was invalid
-// (locked bucket, insufficient balance, bad allocation) -> 400.
+// Unprotected: no logged-in user exists yet at signup/login, and the
+// webhook is called directly by Razorpay's server (trust comes from the
+// signature check inside that route, not a login).
+app.use('/', authRoutes);
+app.use('/', webhookRoutes);
+
+// Everything else requires a valid, logged-in user.
+app.use('/', requireAuth, bucketRoutes);
+app.use('/', requireAuth, paymentRoutes);
+
+// Central error handler: LedgerError/AuthError mean the request itself was
+// invalid (locked bucket, insufficient balance, bad login, etc) -> 400.
 // Anything else is a real bug -> 500.
 app.use((err, req, res, next) => {
-  if (err instanceof LedgerError) {
+  if (err instanceof LedgerError || err instanceof AuthError) {
     return res.status(400).json({ error: err.message });
   }
   console.error(err);
