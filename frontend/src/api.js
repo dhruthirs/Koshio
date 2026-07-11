@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:4000';
+const BASE_URL = 'https://koshio-production.up.railway.app';
 
 function getToken() {
   return localStorage.getItem('koshio_token');
