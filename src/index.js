@@ -46,7 +46,7 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Vault API running on http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Vault API running on port ${PORT}`));
 
 // Runs every day at 9:00 AM server time — checks for custodial buckets
 // (e.g. "Rahul's money") whose due date is within 24 hours and reminds once.
