@@ -1,4 +1,4 @@
-const BASE_URL = 'https://koshio-production.up.railway.app';
+const BASE_URL = 'https://koshio-backend.onrender.com';
 
 function getToken() {
   return localStorage.getItem('koshio_token');
